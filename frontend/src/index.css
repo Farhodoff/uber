@@ -1,49 +1,293 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
-/* Remove root overrides - let pages control their own backgrounds */
-
-body {
-  margin: 0;
-  min-height: 100vh;
-}
-
-/* Glassmorphism Utility */
-.glass {
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-/* Blob animation */
-@keyframes blob {
-  0% {
-    transform: translate(0px, 0px) scale(1);
+@layer base {
+  :root {
+    --card-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+    --card-shadow-hover: 0 8px 32px rgba(0, 0, 0, 0.12);
+    --floating-shadow: 0 8px 40px rgba(0, 0, 0, 0.16);
   }
 
-  33% {
-    transform: translate(30px, -50px) scale(1.1);
-  }
-
-  66% {
-    transform: translate(-20px, 20px) scale(0.9);
-  }
-
-  100% {
-    transform: translate(0px, 0px) scale(1);
+  body {
+    background-color: #f9fafb;
+    color: #111827;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 }
 
-.animate-blob {
-  animation: blob 7s infinite;
+@layer components {
+  .glass {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+  }
+
+  .glass-dark {
+    background: rgba(15, 23, 42, 0.8);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .card-base {
+    background-color: white;
+    border-radius: 1.5rem;
+    /* rounded-3xl */
+    border: 1px solid #f3f4f6;
+    transition: all 400ms cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+  }
+
+  .card-hover:hover {
+    transform: translateY(-4px) scale(1.01);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  }
+
+  .floating-panel {
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(16px);
+    border-top-left-radius: 2rem;
+    border-top-right-radius: 2rem;
+    box-shadow: 0 -4px 30px rgba(0, 0, 0, 0.05);
+  }
+
+  .input-field {
+    width: 100%;
+    background-color: #f3f4f6;
+    border: 2px solid transparent;
+    border-radius: 1rem;
+    padding: 1rem 1.25rem;
+    font-size: 1.125rem;
+    font-weight: 500;
+    outline: none;
+    transition: all 200ms;
+    color: #1e293b;
+  }
+
+  .input-field:focus {
+    background-color: white;
+    border-color: #6366f1;
+    /* primary */
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+  }
+
+  .btn-primary {
+    width: 100%;
+    background: #6366f1;
+    color: white;
+    font-weight: 700;
+    font-size: 1.125rem;
+    padding: 1rem;
+    border-radius: 1rem;
+    transition: all 200ms;
+    box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.3);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .btn-primary:after {
+    content: "";
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+    background-image: radial-gradient(circle, rgba(255, 255, 255, 0.4) 10%, transparent 10.01%);
+    background-repeat: no-repeat;
+    background-position: 50%;
+    transform: scale(10, 10);
+    opacity: 0;
+    transition: transform .5s, opacity 1s;
+  }
+
+  .btn-primary:active:after {
+    transform: scale(0, 0);
+    opacity: 0.3;
+    transition: 0s;
+  }
+
+  .btn-primary:hover {
+    background: #4f46e5;
+    transform: translateY(-2px);
+    box-shadow: 0 20px 25px -5px rgba(99, 102, 241, 0.4);
+  }
+
+  .btn-primary:active {
+    transform: translateY(0) scale(0.98);
+  }
+
+  /* Bottom Navigation Styles */
+  .bottom-nav {
+    position: fixed;
+    bottom: 1.5rem;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90%;
+    max-width: 400px;
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(16px);
+    border-radius: 2rem;
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.15);
+    padding: 0.75rem;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    z-index: 50;
+  }
+
+  /* Radar Animation */
+  @keyframes radar-pulse {
+    0% {
+      box-shadow: 0 0 0 0px rgba(99, 102, 241, 0.4);
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    100% {
+      box-shadow: 0 0 0 100px rgba(99, 102, 241, 0);
+      opacity: 0;
+      transform: scale(1.5);
+    }
+  }
+
+  .radar-ring {
+    animation: radar-pulse 2s infinite cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .radar-ring:nth-child(2) {
+    animation-delay: 0.5s;
+  }
+
+  .radar-ring:nth-child(3) {
+    animation-delay: 1s;
+  }
+
+  /* Gentle Sway for floating elements */
+  @keyframes sway {
+
+    0%,
+    100% {
+      transform: translateY(0) rotate(0deg);
+    }
+
+    50% {
+      transform: translateY(-5px) rotate(1deg);
+    }
+  }
+
+  .animate-sway {
+    animation: sway 4s ease-in-out infinite;
+  }
 }
 
-.animation-delay-2000 {
-  animation-delay: 2s;
+/* Map specific overrides */
+.leaflet-container {
+  width: 100%;
+  height: 100%;
+  z-index: 0;
 }
 
-.animation-delay-4000 {
-  animation-delay: 4s;
+/* Hide scrollbar */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* === MOBILE OPTIMIZATIONS === */
+@media (max-width: 768px) {
+
+  /* Reduce blur intensity on mobile for better performance */
+  .glass {
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  .glass-dark {
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  /* Floating panels responsive */
+  .floating-panel {
+    border-top-left-radius: 1.5rem;
+    border-top-right-radius: 1.5rem;
+  }
+
+  /* Adjust input sizes for mobile */
+  .input-field {
+    font-size: 1rem;
+    padding: 0.875rem 1rem;
+  }
+
+  /* Button sizing for touch - Apple minimum 44px */
+  .btn-primary {
+    font-size: 1rem;
+    padding: 0.875rem;
+    min-height: 48px;
+  }
+
+  /* Bottom nav touch optimization */
+  .bottom-nav button {
+    min-width: 48px;
+    min-height: 48px;
+  }
+}
+
+/* === ACCESSIBILITY === */
+
+/* Reduced motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .animate-float,
+  .animate-pulse,
+  .animate-ping,
+  .animate-sway,
+  .radar-ring {
+    animation: none;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+
+  .glass,
+  .glass-dark {
+    background: rgba(255, 255, 255, 0.95);
+    border: 2px solid #000;
+  }
+
+  .btn-primary {
+    border: 2px solid #000;
+  }
+
+  .input-field:focus {
+    border-width: 3px;
+  }
+}
+
+/* Focus visible for keyboard navigation */
+*:focus-visible {
+  outline: 3px solid #6366f1;
+  outline-offset: 2px;
+}
+
+button:focus-visible,
+a:focus-visible {
+  outline: 3px solid #6366f1;
+  outline-offset: 2px;
 }

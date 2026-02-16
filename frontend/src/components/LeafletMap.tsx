@@ -1,7 +1,8 @@
-import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet'
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
 import { Icon, LatLngExpression } from 'leaflet'
 import 'leaflet/dist/leaflet.css'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
+import LiveCars from './LiveCars'
 
 // Fix for default marker icons in Leaflet
 import icon from 'leaflet/dist/images/marker-icon.png'
@@ -54,18 +55,27 @@ interface LeafletMapProps {
     driverLocation?: Location | null
 }
 
-// Auto-fit map to markers
+// Auto-fit map to markers with Smart Zoom
 function FitBounds({ pickup, dropoff, driverLocation }: LeafletMapProps) {
     const map = useMap()
+    const [hasZoomed, setHasZoomed] = useState(false)
 
     useEffect(() => {
+        if (!map) return
+
         const bounds: L.LatLngTuple[] = []
         if (pickup) bounds.push([pickup.lat, pickup.lng])
         if (dropoff) bounds.push([dropoff.lat, dropoff.lng])
         if (driverLocation) bounds.push([driverLocation.lat, driverLocation.lng])
 
         if (bounds.length > 0) {
-            map.fitBounds(bounds as L.LatLngBoundsExpression, { padding: [50, 50], maxZoom: 14 })
+            // Smart Zoom: If only pickup is set (initial state), zoom close to it
+            if (bounds.length === 1 && pickup && !dropoff) {
+                map.flyTo([pickup.lat, pickup.lng], 16, { duration: 2 })
+            } else {
+                // If route/driver exists, fit all bounds
+                map.fitBounds(bounds as L.LatLngBoundsExpression, { padding: [50, 50], maxZoom: 15, animate: true, duration: 1.5 })
+            }
         }
     }, [pickup, dropoff, driverLocation, map])
 
@@ -75,21 +85,27 @@ function FitBounds({ pickup, dropoff, driverLocation }: LeafletMapProps) {
 export default function LeafletMap({ pickup, dropoff, driverLocation }: LeafletMapProps) {
     const defaultCenter: LatLngExpression = [41.2995, 69.2401] // Tashkent
 
-    const routeCoordinates: LatLngExpression[] = []
-    if (pickup) routeCoordinates.push([pickup.lat, pickup.lng])
-    if (dropoff) routeCoordinates.push([dropoff.lat, dropoff.lng])
-
     return (
         <MapContainer
             center={defaultCenter}
-            zoom={13}
+            zoom={14}
             style={{ height: '100%', width: '100%' }}
             zoomControl={false}
+            className="z-0"
         >
+            {/* Dark Matter Map Style (Premium Look) */}
             <TileLayer
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+                url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}{r}.png"
             />
+            {/* Adding separate labels layer for crisp text */}
+            <TileLayer
+                url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}{r}.png"
+            />
+
+            <LiveCars />
+
+            <FitBounds pickup={pickup} dropoff={dropoff} driverLocation={driverLocation} />
 
             {pickup && (
                 <Marker position={[pickup.lat, pickup.lng]} icon={pickupIcon}>
@@ -108,17 +124,6 @@ export default function LeafletMap({ pickup, dropoff, driverLocation }: LeafletM
                     <Popup>Driver Location</Popup>
                 </Marker>
             )}
-
-            {routeCoordinates.length === 2 && (
-                <Polyline
-                    positions={routeCoordinates}
-                    color="#6366f1"
-                    weight={4}
-                    opacity={0.7}
-                />
-            )}
-
-            <FitBounds pickup={pickup} dropoff={dropoff} driverLocation={driverLocation} />
         </MapContainer>
     )
 }

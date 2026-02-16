@@ -39,6 +39,7 @@ function App() {
         <Route path="/register" element={<Register />} />
         <Route element={<ProtectedRoute allowedRoles={['RIDER']} />}>
           <Route path="/rider" element={<RiderHome />} />
+          <Route path="/rider/home" element={<RiderHome />} />
           <Route path="/rider/history" element={<RiderHistory />} />
           <Route path="/rider/profile" element={<RiderProfile />} />
         </Route>
