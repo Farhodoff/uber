@@ -2,10 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  background-color: #09090b;
-  color: #ffffff;
-}
+/* Remove root overrides - let pages control their own backgrounds */
 
 body {
   margin: 0;
