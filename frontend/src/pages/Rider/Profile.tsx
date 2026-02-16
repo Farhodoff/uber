@@ -1,11 +1,9 @@
 import { useState, useEffect } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { useAuth } from "@/context/AuthContext"
 import { useNavigate } from "react-router-dom"
 import api from "@/services/api"
 import toast from "react-hot-toast"
+import { User, LogOut, ChevronLeft } from "lucide-react"
 
 export default function RiderProfile() {
     const { user, logout } = useAuth()
@@ -45,7 +43,7 @@ export default function RiderProfile() {
             await api.patch(`/users/profiles/${user?.id}`, formData)
             await fetchProfile()
             setIsEditing(false)
-            toast.success('Profile updated successfully!', { id: toastId })
+            toast.success('Profile updated!', { id: toastId })
         } catch (error) {
             console.error('Failed to update profile:', error)
             toast.error('Failed to update profile', { id: toastId })
@@ -60,121 +58,128 @@ export default function RiderProfile() {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-background flex items-center justify-center">
-                <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-current border-r-transparent text-primary"></div>
+            <div className="min-h-screen bg-white flex items-center justify-center">
+                <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-current border-r-transparent text-black"></div>
             </div>
         )
     }
 
     return (
-        <div className="min-h-screen bg-background p-4">
-            <div className="max-w-2xl mx-auto">
-                {/* Header */}
-                <div className="flex items-center justify-between mb-6">
-                    <h1 className="text-3xl font-bold text-white">Profile</h1>
-                    <Button
-                        variant="ghost"
-                        onClick={() => navigate('/rider')}
-                        className="text-white"
+        <div className="min-h-screen bg-white">
+            {/* Header */}
+            <div className="bg-white border-b border-gray-200 px-6 py-4">
+                <div className="flex items-center justify-between max-w-2xl mx-auto">
+                    <button
+                        onClick={() => navigate('/rider/home')}
+                        className="flex items-center gap-2 text-gray-900 hover:text-gray-600 transition-colors"
                     >
-                        ← Back
-                    </Button>
+                        <ChevronLeft className="w-5 h-5" />
+                        Back
+                    </button>
+                    <h1 className="text-xl font-medium">Profile</h1>
+                    <div className="w-16"></div> {/* Spacer for centering */}
+                </div>
+            </div>
+
+            <div className="max-w-2xl mx-auto px-6 py-8">
+                {/* Profile Avatar */}
+                <div className="flex flex-col items-center mb-8">
+                    <div className="w-24 h-24 rounded-full bg-gray-200 flex items-center justify-center text-4xl font-medium text-gray-700 mb-4">
+                        {user?.email?.charAt(0).toUpperCase()}
+                    </div>
+                    <h2 className="text-2xl font-medium text-gray-900">{formData.name || 'User'}</h2>
+                    <p className="text-gray-500 mt-1">{user?.email}</p>
                 </div>
 
-                {/* Profile Card */}
-                <Card className="border-white/10 bg-black/50 backdrop-blur-xl">
-                    <CardHeader>
-                        <CardTitle className="text-white flex items-center gap-3">
-                            <div className="w-16 h-16 rounded-full bg-gradient-to-r from-primary to-secondary flex items-center justify-center text-2xl font-bold">
-                                {user?.email?.charAt(0).toUpperCase()}
-                            </div>
-                            <div>
-                                <p className="text-xl">{formData.name || 'User'}</p>
-                                <p className="text-sm text-gray-400 font-normal">{user?.email}</p>
-                            </div>
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                        {/* Role */}
-                        <div>
-                            <label className="text-gray-400 text-sm">Role</label>
-                            <p className="text-white text-lg font-medium">{user?.role}</p>
-                        </div>
+                {/* Edit Mode Toggle */}
+                <div className="flex items-center justify-between mb-6 pb-6 border-b border-gray-200">
+                    <span className="text-gray-900 font-medium">Edit mode</span>
+                    <button
+                        onClick={() => setIsEditing(!isEditing)}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${isEditing ? 'bg-blue-600' : 'bg-gray-200'
+                            }`}
+                    >
+                        <span
+                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${isEditing ? 'translate-x-6' : 'translate-x-1'
+                                }`}
+                        />
+                    </button>
+                </div>
 
-                        {/* Name */}
-                        <div>
-                            <label className="text-gray-400 text-sm">Full Name</label>
-                            {isEditing ? (
-                                <Input
-                                    value={formData.name}
-                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                    placeholder="Enter your name"
-                                    className="mt-1"
-                                />
-                            ) : (
-                                <p className="text-white text-lg">{formData.name || 'Not set'}</p>
-                            )}
-                        </div>
+                {/* Form Fields */}
+                <div className="space-y-8 mb-8">
+                    {/* Full Name */}
+                    <div>
+                        <label className="block text-sm text-gray-500 mb-2">Full name</label>
+                        {isEditing ? (
+                            <input
+                                type="text"
+                                value={formData.name}
+                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                placeholder="Enter your name"
+                                className="w-full px-0 py-3 text-lg bg-transparent border-0 border-b-2 border-gray-300 focus:border-black focus:ring-0 placeholder:text-gray-400 transition-colors outline-none"
+                            />
+                        ) : (
+                            <p className="text-lg text-gray-900 py-3 border-b-2 border-gray-200">{formData.name || 'Not set'}</p>
+                        )}
+                    </div>
 
-                        {/* Phone */}
-                        <div>
-                            <label className="text-gray-400 text-sm">Phone Number</label>
-                            {isEditing ? (
-                                <Input
-                                    value={formData.phone}
-                                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                                    placeholder="Enter your phone"
-                                    className="mt-1"
-                                />
-                            ) : (
-                                <p className="text-white text-lg">{formData.phone || 'Not set'}</p>
-                            )}
-                        </div>
+                    {/* Email */}
+                    <div>
+                        <label className="block text-sm text-gray-500 mb-2">Email</label>
+                        <p className="text-lg text-gray-900 py-3 border-b-2 border-gray-200">{user?.email}</p>
+                    </div>
 
-                        {/* Actions */}
-                        <div className="flex gap-3 pt-4">
-                            {isEditing ? (
-                                <>
-                                    <Button
-                                        onClick={handleUpdate}
-                                        className="flex-1"
-                                    >
-                                        Save Changes
-                                    </Button>
-                                    <Button
-                                        variant="outline"
-                                        onClick={() => {
-                                            setIsEditing(false)
-                                            setFormData({
-                                                name: profile?.name || '',
-                                                phone: profile?.phone || ''
-                                            })
-                                        }}
-                                        className="flex-1 border-white/20 text-white"
-                                    >
-                                        Cancel
-                                    </Button>
-                                </>
-                            ) : (
-                                <>
-                                    <Button
-                                        onClick={() => setIsEditing(true)}
-                                        className="flex-1"
-                                    >
-                                        Edit Profile
-                                    </Button>
-                                    <Button
-                                        variant="destructive"
-                                        onClick={handleLogout}
-                                        className="flex-1"
-                                    >
-                                        Logout
-                                    </Button>
-                                </>
-                            )}
-                        </div>
-                    </CardContent>
-                </Card>
+                    {/* Phone */}
+                    <div>
+                        <label className="block text-sm text-gray-500 mb-2">Phone</label>
+                        {isEditing ? (
+                            <input
+                                type="tel"
+                                value={formData.phone}
+                                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                                placeholder="Enter your phone"
+                                className="w-full px-0 py-3 text-lg bg-transparent border-0 border-b-2 border-gray-300 focus:border-black focus:ring-0 placeholder:text-gray-400 transition-colors outline-none"
+                            />
+                        ) : (
+                            <p className="text-lg text-gray-900 py-3 border-b-2 border-gray-200">{formData.phone || 'Not set'}</p>
+                        )}
+                    </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="space-y-3">
+                    {isEditing ? (
+                        <>
+                            <button
+                                onClick={handleUpdate}
+                                className="w-full bg-blue-600 text-white font-medium text-lg py-4 rounded-lg hover:bg-blue-700 transition-colors"
+                            >
+                                Save changes
+                            </button>
+                            <button
+                                onClick={() => {
+                                    setIsEditing(false)
+                                    setFormData({
+                                        name: profile?.name || '',
+                                        phone: profile?.phone || ''
+                                    })
+                                }}
+                                className="w-full border-2 border-gray-300 text-gray-900 font-medium text-lg py-4 rounded-lg hover:bg-gray-50 transition-colors"
+                            >
+                                Cancel
+                            </button>
+                        </>
+                    ) : (
+                        <button
+                            onClick={handleLogout}
+                            className="w-full border-2 border-gray-900 text-gray-900 font-medium text-lg py-4 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
+                        >
+                            <LogOut className="w-5 h-5" />
+                            Logout
+                        </button>
+                    )}
+                </div>
             </div>
         </div>
     )

@@ -1,12 +1,10 @@
 import { useState, useEffect } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
 import { useAuth } from "@/context/AuthContext"
 import { useSocket } from "@/context/SocketContext"
 import { useNavigate } from "react-router-dom"
 import api from "@/services/api"
-import LeafletMap from "@/components/LeafletMap"
 import toast from "react-hot-toast"
+import { DollarSign, Clock, MapPin, User } from "lucide-react"
 
 interface RideRequest {
     id: number
@@ -17,53 +15,40 @@ interface RideRequest {
     status?: string
 }
 
-interface Earnings {
-    todayEarnings: number
-    weekEarnings: number
-    totalTrips: number
-    rating?: number
-}
-
 export default function DriverDashboard() {
     const { user, logout } = useAuth()
-    const { socket, isConnected } = useSocket()
+    const { socket } = useSocket()
     const navigate = useNavigate()
     const [isOnline, setIsOnline] = useState(false)
     const [driverId, setDriverId] = useState<number | null>(null)
     const [requests, setRequests] = useState<RideRequest[]>([])
-    const [activeRide, setActiveRide] = useState<RideRequest | null>(null)
     const [loading, setLoading] = useState(true)
-    const [earnings, setEarnings] = useState<Earnings | null>(null)
+    const [stats, setStats] = useState({
+        todayEarnings: 245.50,
+        tripsToday: 12,
+        hoursOnline: 6.5
+    })
 
     useEffect(() => {
         fetchDriverProfile()
     }, [])
 
-    // Replace polling with WebSocket real-time events
+    // WebSocket real-time ride requests
     useEffect(() => {
         if (!socket || !isOnline || !driverId) return
 
-        console.log('Driver listening for ride requests...')
-
-        // Real-time ride request notifications
         socket.on('ride:request', (request: RideRequest) => {
             console.log('New ride request:', request)
             setRequests(prev => {
-                // Avoid duplicates
                 if (prev.find(r => r.id === request.id)) return prev
-                toast('🚗 New ride request!', {
-                    icon: '🔔',
-                    duration: 5000
-                })
+                toast('🚗 New ride request!', { icon: '🔔', duration: 5000 })
                 return [...prev, request]
             })
         })
 
-        // Ride cancelled by rider
         socket.on('ride:cancelled', (data: { orderId: number }) => {
-            console.log('Ride cancelled:', data.orderId)
             setRequests(prev => prev.filter(r => r.id !== data.orderId))
-            toast('Ride request cancelled', { icon: '❌' })
+            toast('Ride cancelled', { icon: '❌' })
         })
 
         return () => {
@@ -72,13 +57,6 @@ export default function DriverDashboard() {
         }
     }, [socket, isOnline, driverId])
 
-    // Fetch earnings when driver comes online
-    useEffect(() => {
-        if (isOnline && driverId) {
-            fetchEarnings()
-        }
-    }, [isOnline, driverId])
-
     const fetchDriverProfile = async () => {
         try {
             const res = await api.get(`/drivers/profiles/${user?.id}`)
@@ -86,49 +64,15 @@ export default function DriverDashboard() {
             setIsOnline(res.data.is_online)
         } catch (error) {
             console.error('Driver profile not found:', error)
-            toast.error('Driver profile not found. Please create a driver profile first.')
+            toast.error('Driver profile not found')
         } finally {
             setLoading(false)
         }
     }
 
-    const fetchEarnings = async () => {
-        if (!driverId) return
-        try {
-            const res = await api.get(`/drivers/${driverId}/earnings`)
-            setEarnings(res.data)
-        } catch (error) {
-            console.error('Failed to fetch earnings:', error)
-            // Set mock data if endpoint doesn't exist
-            setEarnings({
-                todayEarnings: 125000,
-                weekEarnings: 850000,
-                totalTrips: 24,
-                rating: 4.8
-            })
-        }
-    }
-
-    const fetchRideRequests = async () => {
-        if (!driverId) return
-        try {
-            const res = await api.get(`/drivers/${driverId}/requests`)
-            const pending = res.data.filter((r: any) => r.status === 'PENDING')
-
-            // Show toast for new requests
-            if (pending.length > requests.length) {
-                toast('🚗 New ride request!', { icon: '🔔' })
-            }
-
-            setRequests(pending)
-        } catch (error) {
-            console.error('Failed to fetch requests:', error)
-        }
-    }
-
     const toggleOnline = async () => {
         if (!driverId) {
-            toast.error("Driver profile not found. Please create a driver profile first.")
+            toast.error("Driver profile not found")
             return
         }
         try {
@@ -145,242 +89,188 @@ export default function DriverDashboard() {
             } else {
                 toast('You are now offline', { icon: '⚫' })
                 setRequests([])
-                setActiveRide(null)
             }
         } catch (error) {
-            console.error('Error updating status:', error)
-            toast.error("Failed to update online status")
+            console.error('Failed to toggle online status:', error)
+            toast.error('Failed to update status')
         }
     }
 
-    const handleAccept = async (request: RideRequest) => {
+    const acceptRide = async (orderId: number) => {
         if (!driverId) return
-
         const toastId = toast.loading('Accepting ride...')
 
         try {
-            await api.post(`/orders/${request.id}/accept`, { driverId })
-            setActiveRide({ ...request, status: 'ACCEPTED' })
-            setRequests(requests.filter(r => r.id !== request.id))
-            toast.success('Ride accepted! Navigate to pickup 📍', { id: toastId })
-        } catch (error) {
-            console.error('Failed to accept ride:', error)
-            // For demo purposes, still show as accepted
-            setActiveRide({ ...request, status: 'ACCEPTED' })
-            setRequests(requests.filter(r => r.id !== request.id))
-            toast.success('Ride accepted!', { id: toastId })
+            await api.patch(`/orders/${orderId}/accept`, { driverId })
+            setRequests(prev => prev.filter(r => r.id !== orderId))
+            toast.success('Ride accepted! 🚗', { id: toastId })
+        } catch (error: any) {
+            toast.error(error.response?.data?.message || 'Failed to accept ride', { id: toastId })
         }
     }
 
-    const handleDecline = (requestId: number) => {
-        setRequests(requests.filter(r => r.id !== requestId))
-        toast('Ride declined', { icon: '❌' })
-    }
-
-    const completeRide = async () => {
-        if (!activeRide) return
-
-        const toastId = toast.loading('Completing ride...')
-
-        try {
-            await api.patch(`/orders/${activeRide.id}`, { status: 'COMPLETED' })
-            toast.success(`Ride completed! +${activeRide.price.toLocaleString()} UZS 💰`, { id: toastId })
-            setActiveRide(null)
-            // Refresh earnings after completing ride
-            fetchEarnings()
-        } catch (error) {
-            console.error('Failed to complete ride:', error)
-            toast.success(`Ride completed!`, { id: toastId })
-            setActiveRide(null)
-            fetchEarnings()
-        }
+    const declineRide = async (orderId: number) => {
+        setRequests(prev => prev.filter(r => r.id !== orderId))
+        toast('Ride declined', { icon: 'ℹ️' })
     }
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-background flex items-center justify-center">
-                <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-current border-r-transparent text-primary"></div>
+            <div className="min-h-screen bg-white flex items-center justify-center">
+                <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-current border-r-transparent text-black"></div>
             </div>
         )
     }
 
     return (
-        <div className="relative h-screen w-full bg-background overflow-hidden">
-            {/* Map Layer */}
-            <div className="absolute inset-0 z-0 opacity-40">
-                <LeafletMap />
-            </div>
-
-            {/* Top Bar */}
-            <div className="absolute top-0 left-0 right-0 z-10 p-4 bg-gradient-to-b from-black/90 to-transparent space-y-3">
-                {/* Earnings Summary (shown when online) */}
-                {isOnline && earnings && (
-                    <div className="bg-black/60 backdrop-blur-md p-4 rounded-2xl border border-white/10">
-                        <div className="grid grid-cols-3 gap-4">
-                            <div className="text-center">
-                                <p className="text-xs text-gray-400 mb-1">Today</p>
-                                <p className="text-xl font-bold text-green-400">{earnings.todayEarnings.toLocaleString()} UZS</p>
-                            </div>
-                            <div className="text-center border-x border-white/10">
-                                <p className="text-xs text-gray-400 mb-1">This Week</p>
-                                <p className="text-xl font-bold text-blue-400">{earnings.weekEarnings.toLocaleString()} UZS</p>
-                            </div>
-                            <div className="text-center">
-                                <p className="text-xs text-gray-400 mb-1">Trips</p>
-                                <p className="text-xl font-bold text-purple-400">{earnings.totalTrips}</p>
-                            </div>
+        <div className="min-h-screen bg-white">
+            {/* Header */}
+            <div className="bg-white border-b border-gray-200 px-6 py-4">
+                <div className="flex items-center justify-between max-w-4xl mx-auto">
+                    <h1 className="text-xl font-bold">Uber Driver</h1>
+                    <div className="flex items-center gap-4">
+                        <div className="text-right">
+                            <p className="text-2xl font-bold text-green-600">${stats.todayEarnings}</p>
+                            <p className="text-xs text-gray-500">Today's earnings</p>
                         </div>
-                        {earnings.rating && (
-                            <div className="mt-3 pt-3 border-t border-white/10 text-center">
-                                <span className="text-sm text-gray-400">Rating: </span>
-                                <span className="text-sm font-bold text-yellow-400">⭐ {earnings.rating.toFixed(1)}</span>
-                            </div>
-                        )}
-                    </div>
-                )}
-
-                {/* Driver Info + Online Toggle */}
-                <div className="flex justify-between items-center bg-black/60 backdrop-blur-md p-4 rounded-2xl border border-white/10">
-                    <div className="flex items-center gap-3">
-                        <div
-                            className="w-10 h-10 rounded-full bg-gradient-to-r from-primary to-secondary flex items-center justify-center text-white font-bold cursor-pointer"
-                            onClick={() => logout()}
-                        >
-                            👤
-                        </div>
-                        <div>
-                            <p className="text-white font-bold">{user?.email}</p>
-                            <p className="text-xs text-gray-400">Driver</p>
-                        </div>
-                    </div>
-
-                    <div className="flex items-center gap-3">
-                        <span className={`font-bold ${isOnline ? 'text-green-400' : 'text-gray-400'}`}>
-                            {isOnline ? 'ONLINE' : 'OFFLINE'}
-                        </span>
-                        <div
+                        <button
                             onClick={toggleOnline}
-                            className={`w-14 h-8 rounded-full flex items-center p-1 cursor-pointer transition-all ${isOnline ? 'bg-green-500' : 'bg-gray-600'}`}
+                            className={`relative inline-flex h-8 w-16 items-center rounded-full transition-colors ${isOnline ? 'bg-green-600' : 'bg-gray-300'
+                                }`}
                         >
-                            <div className={`bg-white w-6 h-6 rounded-full shadow-md transform transition-transform ${isOnline ? 'translate-x-6' : 'translate-x-0'}`}></div>
-                        </div>
+                            <span
+                                className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform ${isOnline ? 'translate-x-9' : 'translate-x-1'
+                                    }`}
+                            />
+                        </button>
                     </div>
                 </div>
             </div>
 
-            {/* Active Ride */}
-            {activeRide && (
-                <div className="absolute bottom-8 left-4 right-4 z-20">
-                    <Card className="bg-black/90 border-green-500 border-2 backdrop-blur-xl">
-                        <CardContent className="p-6 text-center">
-                            <div className="mb-4">
-                                <div className="w-16 h-16 mx-auto rounded-full bg-green-500/20 flex items-center justify-center mb-3">
-                                    <span className="text-3xl">✓</span>
-                                </div>
-                                <h2 className="text-2xl font-bold text-green-400 mb-2">RIDE ACCEPTED</h2>
-                                <p className="text-gray-400">Navigate to pickup location</p>
-                            </div>
+            <div className="max-w-4xl mx-auto px-6 py-6">
+                {/* Status Badge */}
+                <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center gap-2">
+                        <div className={`w-3 h-3 rounded-full ${isOnline ? 'bg-green-500' : 'bg-gray-400'}`}></div>
+                        <span className="text-lg font-medium text-gray-900">
+                            {isOnline ? 'Online' : 'Offline'}
+                        </span>
+                    </div>
+                    <button
+                        onClick={logout}
+                        className="text-sm text-gray-600 hover:text-gray-900 transition-colors"
+                    >
+                        Logout
+                    </button>
+                </div>
 
-                            <div className="space-y-2 mb-6 text-left">
-                                <div className="flex items-start gap-3">
-                                    <div className="w-3 h-3 rounded-full bg-green-500 mt-1"></div>
-                                    <div>
-                                        <p className="text-xs text-gray-400">Pickup</p>
-                                        <p className="text-white font-medium">{activeRide.pickup_location}</p>
-                                    </div>
-                                </div>
-                                <div className="flex items-start gap-3">
-                                    <div className="w-3 h-3 rounded-full bg-red-500 mt-1"></div>
-                                    <div>
-                                        <p className="text-xs text-gray-400">Dropoff</p>
-                                        <p className="text-white font-medium">{activeRide.dropoff_location}</p>
-                                    </div>
-                                </div>
+                {/* Stats Cards */}
+                <div className="grid grid-cols-2 gap-4 mb-6">
+                    <div className="bg-white border border-gray-200 rounded-2xl p-4">
+                        <div className="flex items-center gap-3 mb-2">
+                            <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                                <Clock className="w-5 h-5 text-blue-600" />
                             </div>
+                            <p className="text-sm text-gray-600">Trips Today</p>
+                        </div>
+                        <p className="text-3xl font-bold text-gray-900">{stats.tripsToday}</p>
+                    </div>
 
-                            <Button
-                                className="w-full bg-green-600 hover:bg-green-500 text-white text-lg font-bold"
-                                onClick={completeRide}
+                    <div className="bg-white border border-gray-200 rounded-2xl p-4">
+                        <div className="flex items-center gap-3 mb-2">
+                            <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+                                <Clock className="w-5 h-5 text-purple-600" />
+                            </div>
+                            <p className="text-sm text-gray-600">Hours Online</p>
+                        </div>
+                        <p className="text-3xl font-bold text-gray-900">{stats.hoursOnline}</p>
+                    </div>
+                </div>
+
+                {/* Active Rides Section */}
+                <div className="mb-4">
+                    <h2 className="text-xl font-bold text-gray-900 mb-4">Active Rides</h2>
+
+                    {!isOnline && (
+                        <div className="bg-gray-50 border border-gray-200 rounded-2xl p-8 text-center">
+                            <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <MapPin className="w-8 h-8 text-gray-400" />
+                            </div>
+                            <h3 className="text-lg font-medium text-gray-900 mb-2">You're offline</h3>
+                            <p className="text-gray-600 mb-4">Go online to start receiving ride requests</p>
+                            <button
+                                onClick={toggleOnline}
+                                className="bg-black text-white font-medium px-6 py-3 rounded-lg hover:bg-gray-900 transition-colors"
                             >
-                                Complete Ride ({activeRide.price.toLocaleString()} UZS)
-                            </Button>
-                        </CardContent>
-                    </Card>
-                </div>
-            )}
+                                Go Online
+                            </button>
+                        </div>
+                    )}
 
-            {/* Ride Requests */}
-            {!activeRide && requests.length > 0 && (
-                <div className="absolute bottom-8 left-4 right-4 z-20 space-y-4">
-                    {requests.map((request) => (
-                        <Card key={request.id} className="bg-black/90 border-primary border-t-4 backdrop-blur-xl">
-                            <CardContent className="p-6">
-                                <div className="flex justify-between items-start mb-4">
-                                    <div>
-                                        <p className="text-gray-400 text-xs mb-1">New Request</p>
-                                        <p className="text-3xl font-bold text-white">{request.price.toLocaleString()} UZS</p>
-                                    </div>
-                                    <div className="bg-white/10 px-3 py-1 rounded-lg">
-                                        <span className="text-sm font-bold text-white">{request.distance_km} km</span>
-                                    </div>
-                                </div>
+                    {isOnline && requests.length === 0 && (
+                        <div className="bg-green-50 border border-green-200 rounded-2xl p-8 text-center">
+                            <p className="text-green-800 font-medium">🟢 Waiting for ride requests...</p>
+                            <p className="text-green-600 text-sm mt-1">You'll be notified when a new request comes in</p>
+                        </div>
+                    )}
 
-                                <div className="space-y-3 mb-6">
-                                    <div className="flex items-start gap-3">
-                                        <div className="w-3 h-3 rounded-full bg-green-500 mt-1"></div>
-                                        <div>
-                                            <p className="text-xs text-gray-400">Pickup</p>
-                                            <p className="text-white">{request.pickup_location}</p>
+                    {isOnline && requests.length > 0 && (
+                        <div className="space-y-4">
+                            {requests.map((request) => (
+                                <div key={request.id} className="bg-white border-2 border-gray-200 rounded-2xl p-6 hover:shadow-lg transition-shadow">
+                                    <div className="flex justify-between items-start mb-4">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
+                                                <User className="w-6 h-6 text-gray-700" />
+                                            </div>
+                                            <div>
+                                                <p className="font-medium text-gray-900">Passenger</p>
+                                                <p className="text-sm text-gray-500">{request.distance_km} km away</p>
+                                            </div>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="text-2xl font-bold text-gray-900">${request.price.toFixed(2)}</p>
+                                            <p className="text-xs text-gray-500">Estimated fare</p>
                                         </div>
                                     </div>
-                                    <div className="flex items-start gap-3">
-                                        <div className="w-3 h-3 rounded-full bg-red-500 mt-1"></div>
-                                        <div>
-                                            <p className="text-xs text-gray-400">Dropoff</p>
-                                            <p className="text-white">{request.dropoff_location}</p>
+
+                                    <div className="space-y-3 mb-4">
+                                        <div className="flex items-start gap-3">
+                                            <div className="mt-1.5 w-2 h-2 rounded-full bg-green-500"></div>
+                                            <div>
+                                                <p className="text-xs text-gray-500">Pickup</p>
+                                                <p className="text-sm text-gray-900 font-medium">{request.pickup_location}</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-start gap-3">
+                                            <div className="mt-1.5 w-2 h-2 rounded-full bg-red-500"></div>
+                                            <div>
+                                                <p className="text-xs text-gray-500">Dropoff</p>
+                                                <p className="text-sm text-gray-900 font-medium">{request.dropoff_location}</p>
+                                            </div>
                                         </div>
                                     </div>
+
+                                    <div className="flex gap-3">
+                                        <button
+                                            onClick={() => acceptRide(request.id)}
+                                            className="flex-1 bg-green-600 text-white font-medium py-3 rounded-lg hover:bg-green-700 transition-colors"
+                                        >
+                                            Accept
+                                        </button>
+                                        <button
+                                            onClick={() => declineRide(request.id)}
+                                            className="flex-1 border-2 border-gray-300 text-gray-900 font-medium py-3 rounded-lg hover:bg-gray-50 transition-colors"
+                                        >
+                                            Decline
+                                        </button>
+                                    </div>
                                 </div>
-
-                                <div className="grid grid-cols-2 gap-3">
-                                    <Button
-                                        variant="outline"
-                                        className="border-white/20 text-white hover:bg-red-500/20"
-                                        onClick={() => handleDecline(request.id)}
-                                    >
-                                        Decline
-                                    </Button>
-                                    <Button
-                                        className="bg-green-600 hover:bg-green-500 text-white font-bold text-lg"
-                                        onClick={() => handleAccept(request)}
-                                    >
-                                        ACCEPT
-                                    </Button>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    ))}
+                            ))}
+                        </div>
+                    )}
                 </div>
-            )}
-
-            {/* Searching State */}
-            {!activeRide && requests.length === 0 && isOnline && (
-                <div className="absolute bottom-20 left-0 right-0 text-center">
-                    <div className="inline-block p-4 bg-black/60 backdrop-blur-md rounded-full">
-                        <p className="text-gray-400 animate-pulse">🔍 Searching for rides...</p>
-                    </div>
-                </div>
-            )}
-
-            {/* Offline State */}
-            {!isOnline && (
-                <div className="absolute bottom-20 left-0 right-0 text-center">
-                    <div className="inline-block p-6 bg-black/80 backdrop-blur-md rounded-2xl border border-white/10 mx-4">
-                        <p className="text-xl text-gray-400 mb-2">You're offline</p>
-                        <p className="text-sm text-gray-500">Toggle online to start receiving ride requests</p>
-                    </div>
-                </div>
-            )}
+            </div>
         </div>
     )
 }
