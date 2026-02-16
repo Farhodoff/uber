@@ -1,4 +1,14 @@
 services:
+  frontend:
+    build: ./frontend
+    container_name: frontend
+    env_file:
+      - ./frontend/.env.example
+    ports:
+      - '5173:5173'
+    depends_on:
+      - api-gateway
+
   api-gateway:
     build: ./services/api-gateway
     container_name: api-gateway

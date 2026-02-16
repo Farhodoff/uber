@@ -1,6 +1,7 @@
 # Microservices Mini Project (Uber-style)
 
 Services:
+- `frontend` (port 5173)
 - `api-gateway` (port 4000)
 - `auth-service` (port 4001)
 - `user-service` (port 4002)
@@ -16,6 +17,10 @@ Each business service has its own PostgreSQL database:
 ```bash
 docker compose up --build
 ```
+
+Frontend:
+- URL: `http://localhost:5173`
+- API base: `http://localhost:4000` (configured in `frontend/.env.example`)
 
 ## Quick flow via Gateway
 
@@ -54,5 +59,10 @@ curl -X POST http://localhost:4000/orders \
 curl http://localhost:4000/orders/user/1 \
   -H "Authorization: Bearer TOKEN"
 ```
+
+## JWT Notes
+
+- `/users/*` and `/orders/*` are protected by JWT at gateway level.
+- `Authorization` header format: `Bearer <token>`
 # uber
 # uber

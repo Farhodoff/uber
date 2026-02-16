@@ -1,4 +1,5 @@
 const express = require('express');
+const cors = require('cors');
 const { createProxyMiddleware } = require('http-proxy-middleware');
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
@@ -10,6 +11,8 @@ const AUTH_SERVICE_URL = process.env.AUTH_SERVICE_URL || 'http://auth-service:40
 const USER_SERVICE_URL = process.env.USER_SERVICE_URL || 'http://user-service:4002';
 const ORDER_SERVICE_URL = process.env.ORDER_SERVICE_URL || 'http://order-service:4003';
 const JWT_SECRET = process.env.JWT_SECRET || 'supersecret';
+
+app.use(cors());
 
 function requireAuth(req, res, next) {
   if (req.path === '/health') {
