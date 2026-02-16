@@ -59,13 +59,13 @@ function FitBounds({ pickup, dropoff, driverLocation }: LeafletMapProps) {
     const map = useMap()
 
     useEffect(() => {
-        const bounds: LatLngExpression[] = []
+        const bounds: L.LatLngTuple[] = []
         if (pickup) bounds.push([pickup.lat, pickup.lng])
         if (dropoff) bounds.push([dropoff.lat, dropoff.lng])
         if (driverLocation) bounds.push([driverLocation.lat, driverLocation.lng])
 
         if (bounds.length > 0) {
-            map.fitBounds(bounds, { padding: [50, 50], maxZoom: 14 })
+            map.fitBounds(bounds as L.LatLngBoundsExpression, { padding: [50, 50], maxZoom: 14 })
         }
     }, [pickup, dropoff, driverLocation, map])
 
