@@ -1,0 +1,81 @@
+services:
+  api-gateway:
+    build: ./services/api-gateway
+    container_name: api-gateway
+    env_file:
+      - ./services/api-gateway/.env.example
+    ports:
+      - '4000:4000'
+    depends_on:
+      - auth-service
+      - user-service
+      - order-service
+
+  auth-service:
+    build: ./services/auth-service
+    container_name: auth-service
+    env_file:
+      - ./services/auth-service/.env.example
+    depends_on:
+      - auth-db
+
+  user-service:
+    build: ./services/user-service
+    container_name: user-service
+    env_file:
+      - ./services/user-service/.env.example
+    depends_on:
+      - user-db
+
+  order-service:
+    build: ./services/order-service
+    container_name: order-service
+    env_file:
+      - ./services/order-service/.env.example
+    depends_on:
+      - order-db
+      - user-service
+
+  auth-db:
+    image: postgres:16-alpine
+    container_name: auth-db
+    environment:
+      POSTGRES_DB: auth_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - auth_db_data:/var/lib/postgresql/data
+      - ./services/auth-service/db-init:/docker-entrypoint-initdb.d
+    ports:
+      - '5433:5432'
+
+  user-db:
+    image: postgres:16-alpine
+    container_name: user-db
+    environment:
+      POSTGRES_DB: user_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - user_db_data:/var/lib/postgresql/data
+      - ./services/user-service/db-init:/docker-entrypoint-initdb.d
+    ports:
+      - '5434:5432'
+
+  order-db:
+    image: postgres:16-alpine
+    container_name: order-db
+    environment:
+      POSTGRES_DB: order_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - order_db_data:/var/lib/postgresql/data
+      - ./services/order-service/db-init:/docker-entrypoint-initdb.d
+    ports:
+      - '5435:5432'
+
+volumes:
+  auth_db_data:
+  user_db_data:
+  order_db_data:

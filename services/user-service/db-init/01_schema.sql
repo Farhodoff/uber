@@ -1,0 +1,7 @@
+CREATE TABLE IF NOT EXISTS user_profiles (
+  id SERIAL PRIMARY KEY,
+  auth_user_id INTEGER UNIQUE NOT NULL,
+  full_name VARCHAR(255) NOT NULL,
+  phone VARCHAR(40),
+  created_at TIMESTAMP DEFAULT NOW()
+);
