@@ -10,6 +10,9 @@ const PORT = process.env.PORT || 4000;
 const AUTH_SERVICE_URL = process.env.AUTH_SERVICE_URL || 'http://auth-service:4001';
 const USER_SERVICE_URL = process.env.USER_SERVICE_URL || 'http://user-service:4002';
 const ORDER_SERVICE_URL = process.env.ORDER_SERVICE_URL || 'http://order-service:4003';
+const DRIVER_SERVICE_URL = process.env.DRIVER_SERVICE_URL || 'http://driver-service:4004';
+const SOCKET_SERVICE_URL = process.env.SOCKET_SERVICE_URL || 'http://socket-service:4005';
+const LOCATION_SERVICE_URL = process.env.LOCATION_SERVICE_URL || 'http://location-service:4006';
 const JWT_SECRET = process.env.JWT_SECRET || 'supersecret';
 
 app.use(cors());
@@ -54,6 +57,24 @@ app.use('/orders', requireAuth, createProxyMiddleware({
   target: ORDER_SERVICE_URL,
   changeOrigin: true,
   pathRewrite: { '^/orders': '' }
+}));
+
+app.use('/drivers', requireAuth, createProxyMiddleware({
+  target: DRIVER_SERVICE_URL,
+  changeOrigin: true,
+  pathRewrite: { '^/drivers': '' }
+}));
+
+app.use('/locations', createProxyMiddleware({
+  target: LOCATION_SERVICE_URL,
+  changeOrigin: true,
+  pathRewrite: { '^/locations': '' }
+}));
+
+app.use('/socket.io', createProxyMiddleware({
+  target: SOCKET_SERVICE_URL,
+  changeOrigin: true,
+  ws: true
 }));
 
 app.listen(PORT, () => {

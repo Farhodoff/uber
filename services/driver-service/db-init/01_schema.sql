@@ -1,0 +1,19 @@
+CREATE TABLE IF NOT EXISTS drivers (
+  id SERIAL PRIMARY KEY,
+  auth_user_id INTEGER UNIQUE NOT NULL,
+  license_number VARCHAR(50) UNIQUE NOT NULL,
+  vehicle_make VARCHAR(50) NOT NULL,
+  vehicle_model VARCHAR(50) NOT NULL,
+  vehicle_year INTEGER NOT NULL,
+  plate_number VARCHAR(20) UNIQUE NOT NULL,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS driver_status (
+  id SERIAL PRIMARY KEY,
+  driver_id INTEGER UNIQUE REFERENCES drivers(id) ON DELETE CASCADE,
+  is_online BOOLEAN DEFAULT FALSE,
+  current_lat DOUBLE PRECISION,
+  current_lon DOUBLE PRECISION,
+  last_updated TIMESTAMP DEFAULT NOW()
+);

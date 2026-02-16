@@ -85,7 +85,47 @@ services:
     ports:
       - '5435:5432'
 
+  driver-service:
+    build: ./services/driver-service
+    container_name: driver-service
+    env_file:
+      - ./services/driver-service/.env.example
+    depends_on:
+      - driver-db
+
+  driver-db:
+    image: postgres:16-alpine
+    container_name: driver-db
+    environment:
+      POSTGRES_DB: driver_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - driver_db_data:/var/lib/postgresql/data
+      - ./services/driver-service/db-init:/docker-entrypoint-initdb.d
+    ports:
+      - '5436:5432'
+
+  location-service:
+    build: ./services/location-service
+    container_name: location-service
+    env_file:
+      - ./services/location-service/.env.example
+    ports:
+      - '4006:4006'
+
+  socket-service:
+    build: ./services/socket-service
+    container_name: socket-service
+    env_file:
+      - ./services/socket-service/.env.example
+    ports:
+      - '4005:4005'
+    depends_on:
+      - driver-service
+
 volumes:
   auth_db_data:
   user_db_data:
   order_db_data:
+  driver_db_data:

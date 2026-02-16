@@ -29,10 +29,12 @@ app.get('/health', async (_req, res) => {
 
 app.post('/register', async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, role } = req.body;
     if (!email || !password) {
       return res.status(400).json({ message: 'email and password are required' });
     }
+
+    const userRole = role && ['RIDER', 'DRIVER', 'ADMIN'].includes(role) ? role : 'RIDER';
 
     const exists = await pool.query('SELECT id FROM auth_users WHERE email = $1', [email]);
     if (exists.rows.length) {
@@ -41,8 +43,8 @@ app.post('/register', async (req, res) => {
 
     const hash = await bcrypt.hash(password, 10);
     const created = await pool.query(
-      'INSERT INTO auth_users (email, password_hash) VALUES ($1, $2) RETURNING id, email, created_at',
-      [email, hash]
+      'INSERT INTO auth_users (email, password_hash, role) VALUES ($1, $2, $3) RETURNING id, email, role, created_at',
+      [email, hash, userRole]
     );
 
     return res.status(201).json(created.rows[0]);
@@ -69,8 +71,8 @@ app.post('/login', async (req, res) => {
       return res.status(401).json({ message: 'invalid credentials' });
     }
 
-    const token = jwt.sign({ sub: user.id, email: user.email }, JWT_SECRET, { expiresIn: '1h' });
-    return res.json({ token, userId: user.id, email: user.email });
+    const token = jwt.sign({ sub: user.id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '1h' });
+    return res.json({ token, userId: user.id, email: user.email, role: user.role });
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }

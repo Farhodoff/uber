@@ -1,8 +1,11 @@
 CREATE TABLE IF NOT EXISTS orders (
   id SERIAL PRIMARY KEY,
   auth_user_id INTEGER NOT NULL,
+  driver_id INTEGER,
   pickup_location TEXT NOT NULL,
   dropoff_location TEXT NOT NULL,
-  status VARCHAR(40) NOT NULL DEFAULT 'PENDING',
+  price DECIMAL(10, 2),
+  distance_km DECIMAL(10, 2),
+  status VARCHAR(40) NOT NULL DEFAULT 'PENDING', -- PENDING, ACCEPTED, PROCESSED, COMPLETED, CANCELLED
   created_at TIMESTAMP DEFAULT NOW()
 );
