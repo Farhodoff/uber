@@ -128,11 +128,16 @@ app.get('/reverse-geocode', async (req, res) => {
     }
 });
 
-app.listen(PORT, () => {
-    console.log(`location-service running on ${PORT}`);
-    if (GOOGLE_MAPS_API_KEY) {
-        console.log('✓ Google Maps API key configured');
-    } else {
-        console.warn('⚠ Google Maps API key not found, using mock data');
-    }
-});
+if (require.main === module) {
+    app.listen(PORT, () => {
+        console.log(`location-service running on ${PORT}`);
+        if (GOOGLE_MAPS_API_KEY) {
+            console.log('✓ Google Maps API key configured');
+        } else {
+            console.warn('⚠ Google Maps API key not found, using mock data');
+        }
+    });
+}
+
+module.exports = app;
+

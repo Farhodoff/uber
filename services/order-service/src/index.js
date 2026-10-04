@@ -148,6 +148,10 @@ app.get('/user/:authUserId', async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`order-service running on ${PORT}`);
-});
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`order-service running on ${PORT}`);
+  });
+}
+
+module.exports = { app, pool };

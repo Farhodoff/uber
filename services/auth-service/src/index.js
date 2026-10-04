@@ -78,6 +78,10 @@ app.post('/login', async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`auth-service running on ${PORT}`);
-});
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`auth-service running on ${PORT}`);
+  });
+}
+
+module.exports = { app, pool };

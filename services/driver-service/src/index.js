@@ -118,6 +118,10 @@ app.get('/nearby', async (req, res) => {
     }
 });
 
-app.listen(PORT, () => {
-    console.log(`driver-service running on ${PORT}`);
-});
+if (require.main === module) {
+    app.listen(PORT, () => {
+        console.log(`driver-service running on ${PORT}`);
+    });
+}
+
+module.exports = { app, pool };
