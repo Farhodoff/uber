@@ -84,6 +84,11 @@ app.post('/notify/rider', (req, res) => {
     return res.status(404).json({ success: false, message: 'Rider not connected' });
 });
 
-server.listen(PORT, () => {
-    console.log(`socket-service running on ${PORT}`);
-});
+if (require.main === module) {
+    server.listen(PORT, () => {
+        console.log(`socket-service running on ${PORT}`);
+    });
+}
+
+module.exports = { app, server, io, riders, drivers };
+

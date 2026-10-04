@@ -37,6 +37,14 @@ function requireAuth(req, res, next) {
   }
 }
 
+const forwardAuthHeaders = (proxyReq, req) => {
+  if (req.user) {
+    if (req.user.sub) proxyReq.setHeader('x-user-id', String(req.user.sub));
+    if (req.user.email) proxyReq.setHeader('x-user-email', String(req.user.email));
+    if (req.user.role) proxyReq.setHeader('x-user-role', String(req.user.role));
+  }
+};
+
 app.get('/health', (_req, res) => {
   res.json({ service: 'api-gateway', status: 'ok' });
 });
@@ -50,19 +58,28 @@ app.use('/auth', createProxyMiddleware({
 app.use('/users', requireAuth, createProxyMiddleware({
   target: USER_SERVICE_URL,
   changeOrigin: true,
-  pathRewrite: { '^/users': '' }
+  pathRewrite: { '^/users': '' },
+  on: {
+    proxyReq: forwardAuthHeaders,
+  },
 }));
 
 app.use('/orders', requireAuth, createProxyMiddleware({
   target: ORDER_SERVICE_URL,
   changeOrigin: true,
-  pathRewrite: { '^/orders': '' }
+  pathRewrite: { '^/orders': '' },
+  on: {
+    proxyReq: forwardAuthHeaders,
+  },
 }));
 
 app.use('/drivers', requireAuth, createProxyMiddleware({
   target: DRIVER_SERVICE_URL,
   changeOrigin: true,
-  pathRewrite: { '^/drivers': '' }
+  pathRewrite: { '^/drivers': '' },
+  on: {
+    proxyReq: forwardAuthHeaders,
+  },
 }));
 
 app.use('/locations', createProxyMiddleware({
@@ -77,6 +94,10 @@ app.use('/socket.io', createProxyMiddleware({
   ws: true
 }));
 
-app.listen(PORT, () => {
-  console.log(`api-gateway running on ${PORT}`);
-});
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`api-gateway running on ${PORT}`);
+  });
+}
+
+module.exports = { app, requireAuth };

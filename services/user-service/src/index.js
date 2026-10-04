@@ -58,6 +58,10 @@ app.get('/profiles/:authUserId', async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`user-service running on ${PORT}`);
-});
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`user-service running on ${PORT}`);
+  });
+}
+
+module.exports = { app, pool };
